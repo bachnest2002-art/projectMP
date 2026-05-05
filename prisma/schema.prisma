@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  role     String   // admin, customer, crm, ra
+  mobile   String?  @unique
+  otp      String?
+  otp_expiry DateTime?
+  // For customers
+  otp_verified Boolean @default(false)
+  bank_name    String?
+  payment_date DateTime?
+  account_number String?
+  utr_number   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  comments   Comment[] @relation("commentedUser")
+  madeComments Comment[] @relation("commenter")
+  portfolios Portfolio[]
+  createdPortfolios Portfolio[] @relation("portfolioCreator")
+  recommendations Recommendation[]
+  bhavcopies Bhavcopy[]
+  liquidbees LiquidBees[]
+}
+
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  user_id   Int  // The user who the comment is about
+  commenter_id Int  // The user who made the comment
+  comment   String
+  createdAt DateTime @default(now())
+
+  // Relations
+  user      User     @relation(fields: [user_id], references: [id], name: "commentedUser")
+  commenter User     @relation(fields: [commenter_id], references: [id], name: "commenter")
+}
+
+model Portfolio {
+  id              Int       @id @default(autoincrement())
+  user_id         Int
+  start_date      DateTime
+  end_date        DateTime?
+  is_active       Boolean   @default(true)
+  is_complimentary Boolean  @default(false)
+  initial_value   Float?
+  current_value   Float?
+  created_by      Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [user_id], references: [id])
+  creator         User      @relation(fields: [created_by], references: [id], name: "portfolioCreator")
+  stocks          PortfolioStock[]
+}
+
+model Stock {
+  id       Int      @id @default(autoincrement())
+  symbol   String   @unique
+  industry String
+  createdAt DateTime @default(now())
+
+  // Relations
+  recommendations Recommendation[]
+  portfolios     PortfolioStock[]
+}
+
+model Recommendation {
+  id       Int      @id @default(autoincrement())
+  ra_id    Int
+  stock_id Int
+  action   String   // buy or sell
+  date     DateTime @default(now())
+
+  // Relations
+  ra       User     @relation(fields: [ra_id], references: [id])
+  stock    Stock    @relation(fields: [stock_id], references: [id])
+}
+
+model PortfolioStock {
+  id          Int      @id @default(autoincrement())
+  portfolio_id Int
+  stock_id    Int
+  quantity    Int
+  buy_price   Float
+  buy_date    DateTime
+  sell_price  Float?
+  sell_date   DateTime?
+
+  // Relations
+  portfolio   Portfolio @relation(fields: [portfolio_id], references: [id])
+  stock       Stock     @relation(fields: [stock_id], references: [id])
+}
+
+model Bhavcopy {
+  id         Int      @id @default(autoincrement())
+  date       DateTime @unique
+  file_path  String
+  uploaded_by Int
+  createdAt  DateTime @default(now())
+
+  // Relations
+  uploader   User     @relation(fields: [uploaded_by], references: [id])
+}
+
+model LiquidBees {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @unique
+  closing_rate  Float
+  uploaded_by   Int
+  createdAt     DateTime @default(now())
+
+  // Relations
+  uploader      User     @relation(fields: [uploaded_by], references: [id])
+}
